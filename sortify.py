@@ -19,6 +19,10 @@ import json
 import random
 import os
 
+import numpy as np
+import sklearn.manifold as mani
+
+
 from flask import (Flask, request, redirect, render_template, url_for,
                    session, flash)
 from flask_bootstrap import Bootstrap
@@ -26,8 +30,9 @@ from flask_wtf import Form
 import spotipy
 import spotipy.oauth2
 from wtforms import StringField, SubmitField
-from wtforms.validators import Required, NoneOf
+from wtforms.validators import DataRequired, NoneOf
 from dotenv import load_dotenv, find_dotenv
+from shuffler import Shuffler
 
 app = Flask(__name__)
 bootstrap = Bootstrap(app)
@@ -45,7 +50,7 @@ class PlaylistNameForm(Form):
 
     Will not accept existing playlist names.
     """
-    name = StringField("Playlist Name", validators=[Required()])
+    name = StringField("Playlist Name", validators=[DataRequired()])
     submit = SubmitField("Save")
 
     def __init__(self, playlist_names):
@@ -170,9 +175,34 @@ def get_shuffle(tracks):
     Returns:
         A tuple of shuffled indexes.
     """
-    sequence = list(range(len(tracks)))
-    random.shuffle(sequence)
-    return sequence
+#    smart_shuffle(tracks)
+#    sequence = list(range(len(tracks)))
+#    random.shuffle(sequence)
+    return smart_shuffle(tracks)
+
+
+def smart_shuffle(tracks):
+    """Return a shuffling sequence. The sequence will be based on the traveling salesman
+    problem once the music attributes space has been shifted into 2d space
+
+    Because we can't fit large playlists into the session cookie, we
+    only store a shuffling pattern, i.e. a sequence of indices.
+
+    Args:
+        tracks: An iterable.
+
+    Returns:
+        A tuple of shuffled indexes.
+    """
+    spotify = get_spotify()
+    shuffler = Shuffler(tracks,spotify)
+    sort = shuffler.get_sort()
+    print(sort)
+    return tuple(sort)
+
+
+
+
 
 
 def get_names(tracks):
