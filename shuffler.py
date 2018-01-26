@@ -24,6 +24,8 @@ import math
 
 from ortools.constraint_solver import pywrapcp
 from ortools.constraint_solver import routing_enums_pb2
+from bokeh.plotting import figure
+from bokeh.embed import components
 
 from typing import List, Tuple
 
@@ -33,6 +35,7 @@ class Shuffler(object):
     _spotify = None
     _df = None
     _sort = None
+    _locations = None
 
     def __init__(self, tracks: List[tuple], spotify: spotipy):
         self._tracks = tracks
@@ -56,8 +59,11 @@ class Shuffler(object):
         return self._df[f_cols].values
 
     def decompose(self):
-        tsne = mani.TSNE(n_components=2)
-        return tsne.fit_transform(self.get_features())
+        if self._locations is None:
+            tsne = mani.TSNE(n_components=2)
+            self._locations = tsne.fit_transform(self.get_features())
+
+        return self._locations
 
     def get_sort(self):
         if self._sort is None:
@@ -96,6 +102,27 @@ class Shuffler(object):
                         node = assignment.Value(routing.NextVar(node))
 
         return self._sort
+
+    def get_charts(self):
+        if self._sort is None:
+            self.get_sort()
+
+        p_orig = figure(plot_width=400, plot_height=400)
+        p_sort = figure(plot_width=400, plot_height=400)
+
+        locs = np.array(self._locations)
+        sorted_locs = np.array([locs[i] for i in self._sort])
+
+        #add the circles
+        p_orig.circle(locs[:,0],locs[:,1], size=5, color="navy", alpha=0.5)
+        p_sort.circle(sorted_locs[:,0], sorted_locs[:,1], line_width=5, color="navy", alpha=0.5)
+
+        #now the lines
+        p_orig.line(locs[:,0],locs[:,1], line_width=2, color="red")
+        p_sort.line(sorted_locs[:,0], sorted_locs[:,1], line_width=2, color="red")
+
+        plots = {'original':p_orig, 'sorted':p_sort}
+        return components(plots)
 
 
 def distance(x1, y1, x2, y2):

@@ -33,6 +33,7 @@ from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired, NoneOf
 from dotenv import load_dotenv, find_dotenv
 from shuffler import Shuffler
+from collections import namedtuple
 
 app = Flask(__name__)
 bootstrap = Bootstrap(app)
@@ -43,6 +44,8 @@ PORT = 8080
 REDIRECT_URI = "{}:{}/playlists".format(CLIENT_SIDE_URL, PORT)
 SCOPE = ("playlist-modify-public playlist-modify-private "
          "playlist-read-collaborative playlist-read-private")
+
+Results = namedtuple('Results', ['sort', 'script', 'div'])
 
 
 class PlaylistNameForm(Form):
@@ -117,12 +120,14 @@ def view_playlist(playlist_id):
 
     name = session["name"] = results["name"]
     images = results["images"]
-    session["shuffled"] = get_shuffle(track_names)
+    shuffle = get_shuffle(track_names)
+    session["shuffled"] = shuffle.sort
     shuffled_names = [track_names[idx] for idx in session["shuffled"]]
 
     return render_template(
         "playlist.html", name=name, track_names=get_names(track_names),
-        shuffled_names=get_names(shuffled_names), images=images, form=form)
+        shuffled_names=get_names(shuffled_names), images=images, form=form,
+        script=shuffle.script, div=shuffle.div)
 
 
 def get_oauth():
@@ -175,9 +180,6 @@ def get_shuffle(tracks):
     Returns:
         A tuple of shuffled indexes.
     """
-#    smart_shuffle(tracks)
-#    sequence = list(range(len(tracks)))
-#    random.shuffle(sequence)
     return smart_shuffle(tracks)
 
 
@@ -197,8 +199,10 @@ def smart_shuffle(tracks):
     spotify = get_spotify()
     shuffler = Shuffler(tracks,spotify)
     sort = shuffler.get_sort()
-    print(sort)
-    return tuple(sort)
+    script, div = shuffler.get_charts()
+    results = Results(sort=tuple(sort),script=script, div=div)
+
+    return results
 
 
 
