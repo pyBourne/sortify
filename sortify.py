@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (C) 2016 Shea G Craig
+# Copyright (C) 2018 Jacob Bourne
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,25 +15,20 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import json
-import random
 import os
+from collections import namedtuple
 
-import numpy as np
-import sklearn.manifold as mani
-
-
+import spotipy
+import spotipy.oauth2
+from dotenv import load_dotenv, find_dotenv
 from flask import (Flask, request, redirect, render_template, url_for,
                    session, flash)
 from flask_bootstrap import Bootstrap
 from flask_wtf import Form
-import spotipy
-import spotipy.oauth2
 from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired, NoneOf
-from dotenv import load_dotenv, find_dotenv
+
 from shuffler import Shuffler
-from collections import namedtuple
 
 app = Flask(__name__)
 bootstrap = Bootstrap(app)
@@ -197,16 +192,12 @@ def smart_shuffle(tracks):
         A tuple of shuffled indexes.
     """
     spotify = get_spotify()
-    shuffler = Shuffler(tracks,spotify)
+    shuffler = Shuffler(tracks, spotify)
     sort = shuffler.get_sort()
     script, div = shuffler.get_charts()
-    results = Results(sort=tuple(sort),script=script, div=div)
+    results = Results(sort=tuple(sort), script=script, div=div)
 
     return results
-
-
-
-
 
 
 def get_names(tracks):

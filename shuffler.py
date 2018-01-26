@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (C) 2016 Shea G Craig
+# Copyright (C) 2018 Jacob Bourne
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,20 +15,17 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import math
+from typing import List
+
 import numpy as np
 import pandas as pd
 import sklearn.manifold as mani
-
 import spotipy
-import math
-
-from ortools.constraint_solver import pywrapcp
-from ortools.constraint_solver import routing_enums_pb2
-from bokeh.plotting import figure, ColumnDataSource
 from bokeh.embed import components
 from bokeh.models import HoverTool
-
-from typing import List, Tuple
+from bokeh.plotting import figure, ColumnDataSource
+from ortools.constraint_solver import pywrapcp
 
 
 class Shuffler(object):
@@ -61,8 +58,8 @@ class Shuffler(object):
 
     def decompose(self):
         if self._locations is None:
-            tsne = mani.TSNE(n_components=2)
-            self._locations = tsne.fit_transform(self.get_features())
+            manifold = mani.TSNE(n_components=2)
+            self._locations = manifold.fit_transform(self.get_features())
 
         return self._locations
 
