@@ -59,8 +59,11 @@ class PlaylistNameForm(Form):
 
 @app.route("/")
 def index():
-    """Redirect user to Spotify login/auth."""
-    # TODO: Probably should add a Login page?
+    return render_template('landing.html')
+
+
+@app.route("/login")
+def login():
     sp_oauth = get_oauth()
     return redirect(sp_oauth.get_authorize_url())
 
@@ -99,7 +102,7 @@ def view_playlist(playlist_id):
                    track_info]
 
     if "Shuffle" in request.form:
-        return redirect(url_for("view_playlist", playlist_id=playlist_id))
+        return redirect(url_for("view_playlistsplaylist", playlist_id=playlist_id))
     elif form.validate_on_submit():
         new_playlist_name = form.name.data
         spotify.user_playlist_create(user_id, new_playlist_name,
@@ -111,7 +114,7 @@ def view_playlist(playlist_id):
         for tracks in get_tracks_for_add(all_tracks):
             spotify.user_playlist_add_tracks(user_id, new_playlist_id, tracks)
         flash("Playlist '{}' saved.".format(new_playlist_name))
-        return redirect(url_for("index"))
+        return redirect(url_for("playlists"))
 
     name = session["name"] = results["name"]
     images = results["images"]
