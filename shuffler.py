@@ -24,8 +24,9 @@ import math
 
 from ortools.constraint_solver import pywrapcp
 from ortools.constraint_solver import routing_enums_pb2
-from bokeh.plotting import figure
+from bokeh.plotting import figure, ColumnDataSource
 from bokeh.embed import components
+from bokeh.models import HoverTool
 
 from typing import List, Tuple
 
@@ -107,19 +108,40 @@ class Shuffler(object):
         if self._sort is None:
             self.get_sort()
 
-        p_orig = figure(plot_width=400, plot_height=400)
-        p_sort = figure(plot_width=400, plot_height=400)
+
+        old_names = [x[0] for x in self._tracks]
+        sorted_names = [old_names[i] for i in self._sort]
 
         locs = np.array(self._locations)
         sorted_locs = np.array([locs[i] for i in self._sort])
 
+        old_source = ColumnDataSource(data=dict(
+            x=locs[:,0],
+            y=locs[:,1],
+            name=old_names,
+        ))
+
+        new_source = ColumnDataSource(data=dict(
+            x=sorted_locs[:,0],
+            y=sorted_locs[:,1],
+            name=sorted_names,
+        ))
+
+        hover = HoverTool(tooltips=[
+            ("name", "@name"),
+            ("(x,y)", "($x, $y)"),
+        ])
+
+        p_orig = figure(plot_width=400, plot_height=400, tools=[hover])
+        p_sort = figure(plot_width=400, plot_height=400, tools=[hover])
+
         #add the circles
-        p_orig.circle(locs[:,0],locs[:,1], size=5, color="navy", alpha=0.5)
-        p_sort.circle(sorted_locs[:,0], sorted_locs[:,1], line_width=5, color="navy", alpha=0.5)
+        p_orig.circle('x', 'y', size=5, color="navy", alpha=0.5, source=old_source)
+        p_sort.circle('x', 'y', size=5, color="navy", alpha=0.5, source=new_source)
 
         #now the lines
-        p_orig.line(locs[:,0],locs[:,1], line_width=2, color="red")
-        p_sort.line(sorted_locs[:,0], sorted_locs[:,1], line_width=2, color="red")
+        p_orig.line('x','y', line_width=2, color="red", source=old_source)
+        p_sort.line('x','y', line_width=2, color="red", source=new_source)
 
         plots = {'original':p_orig, 'sorted':p_sort}
         return components(plots)
