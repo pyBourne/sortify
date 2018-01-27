@@ -1,13 +1,14 @@
 {% extends "base.html" %}
 {% block pagename %}
-    <h1>Sortify</h1>
 {% endblock %}
 {% block data %}
-    <div class="inner cover">
-        <p class="lead">Spotify is great, but it has one major flaw, randomizing playlists.  Random sorting can create some
-        jarring transitions.  Sortfiy uses machine learning and optimizations to create a smoother sorted playlist.</p>
-        <p class="lead">
+    <div class="container">
+        <div class="jumbotron">
+            <h1>Sortify</h1>
+            <p>Spotify is great, but it has one major flaw, randomizing playlists. Random sorting can create some
+                jarring transitions. Sortfiy uses machine learning and optimizations to create a smoother sorted
+                playlist.</p>
             <a href="{{ url_for('login') }}" class="btn btn-lg btn-default">Lets Go</a>
-        </p>
+        </div>
     </div>
 {% endblock %}
