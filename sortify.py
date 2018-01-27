@@ -118,7 +118,7 @@ def view_playlist(playlist_id):
 
     name = session["name"] = results["name"]
     images = results["images"]
-    shuffle = get_shuffle(track_names)
+    shuffle = smart_shuffle(track_names)
     session["shuffled"] = shuffle.sort
     shuffled_names = [track_names[idx] for idx in session["shuffled"]]
 
@@ -164,21 +164,6 @@ def get_tracks_for_add(tracks):
             yield output
             output = []
         idx += 1
-
-
-def get_shuffle(tracks):
-    """Return a shuffling sequence.
-
-    Because we can't fit large playlists into the session cookie, we
-    only store a shuffling pattern, i.e. a sequence of indices.
-
-    Args:
-        tracks: An iterable.
-
-    Returns:
-        A tuple of shuffled indexes.
-    """
-    return smart_shuffle(tracks)
 
 
 def smart_shuffle(tracks):
