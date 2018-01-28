@@ -32,10 +32,11 @@ from shuffler import Shuffler
 
 app = Flask(__name__)
 bootstrap = Bootstrap(app)
+load_dotenv(find_dotenv())
 
 # Flask Parameters
-CLIENT_SIDE_URL = "http://127.0.0.1"
-PORT = 8080
+CLIENT_SIDE_URL = os.environ.get('base_url')
+PORT = int(os.environ.get('base_port'))
 REDIRECT_URI = "{}:{}/playlists".format(CLIENT_SIDE_URL, PORT)
 SCOPE = ("playlist-modify-public playlist-modify-private "
          "playlist-read-collaborative playlist-read-private")
@@ -131,7 +132,9 @@ def view_playlist(playlist_id):
 def get_oauth():
     """Return a Spotipy Oauth2 object."""
     return spotipy.oauth2.SpotifyOAuth(
-        os.environ.get("ClientID"), os.environ.get("ClientSecret"), REDIRECT_URI, scope=SCOPE,
+        os.environ.get("ClientID"),
+        os.environ.get("ClientSecret"),
+        REDIRECT_URI, scope=SCOPE,
         cache_path=".tokens")
 
 
@@ -218,4 +221,4 @@ def get_playlist_id_by_name(name):
 if __name__ == "__main__":
     load_dotenv(find_dotenv())
     app.secret_key = os.environ.get("SecretKey")
-    app.run(debug=True, port=PORT)
+    app.run(debug=bool( os.environ.get("debug")), port=PORT)
