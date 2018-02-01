@@ -30,8 +30,8 @@ from wtforms.validators import DataRequired, NoneOf
 
 from shuffler import Shuffler
 
-app = Flask(__name__)
-bootstrap = Bootstrap(app)
+application = Flask(__name__)
+bootstrap = Bootstrap(application)
 load_dotenv(find_dotenv())
 
 # Flask Parameters
@@ -58,18 +58,18 @@ class PlaylistNameForm(Form):
             NoneOf(playlist_names, message="That name is already in use!"))
 
 
-@app.route("/")
+@application.route("/")
 def index():
     return render_template('landing.html')
 
 
-@app.route("/login")
+@application.route("/login")
 def login():
     sp_oauth = get_oauth()
     return redirect(sp_oauth.get_authorize_url())
 
 
-@app.route("/playlists")
+@application.route("/playlists")
 def playlist_selection():
     """Render playlists as buttons to choose from."""
     # This is the route which the Spotify OAuth redirects to.
@@ -82,7 +82,7 @@ def playlist_selection():
     return render_template("playlists.html", playlists=playlists)
 
 
-@app.route("/playlist/<playlist_id>", methods=["GET", "POST"])
+@application.route("/playlist/<playlist_id>", methods=["GET", "POST"])
 def view_playlist(playlist_id):
     """Shuffle a playlist and allow user to save to a new playlist."""
     form = PlaylistNameForm(session["playlist_names"])
@@ -220,5 +220,5 @@ def get_playlist_id_by_name(name):
 
 if __name__ == "__main__":
     load_dotenv(find_dotenv())
-    app.secret_key = os.environ.get("SecretKey")
-    app.run(debug=bool( os.environ.get("debug")), port=PORT)
+    application.secret_key = os.environ.get("SecretKey")
+    application.run(debug=bool(os.environ.get("debug")), port=PORT)
