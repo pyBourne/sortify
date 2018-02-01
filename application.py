@@ -140,7 +140,6 @@ def view_playlist(playlist_id):
 
 def get_oauth():
     """Return a Spotipy Oauth2 object."""
-    print(REDIRECT_URI)
     return spotipy.oauth2.SpotifyOAuth(
         os.environ.get("ClientID"),
         os.environ.get("ClientSecret"),
