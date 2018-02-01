@@ -16,10 +16,12 @@
 
 
 import os
+import requests
+import base64
+import urllib.parse
+import json
 from collections import namedtuple
 
-import spotipy
-import spotipy.oauth2
 from dotenv import load_dotenv, find_dotenv
 from flask import (Flask, request, redirect, render_template, url_for,
                    session, flash)
@@ -39,6 +41,18 @@ application.secret_key = os.environ.get("SecretKey")
 CLIENT_SIDE_URL = os.environ.get('base_url')
 
 
+#  Client Keys
+CLIENT_ID = os.environ.get('ClientID')
+CLIENT_SECRET = os.environ.get('ClientSecret')
+
+# Spotify URLS
+SPOTIFY_AUTH_URL = "https://accounts.spotify.com/authorize"
+SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token"
+SPOTIFY_API_BASE_URL = "https://api.spotify.com"
+API_VERSION = "v1"
+SPOTIFY_API_URL = "{}/{}".format(SPOTIFY_API_BASE_URL, API_VERSION)
+
+
 
 PORT = os.environ.get('base_port')
 if PORT is None:
@@ -51,6 +65,19 @@ SCOPE = ("playlist-modify-public playlist-modify-private "
          "playlist-read-collaborative playlist-read-private")
 
 Results = namedtuple('Results', ['sort', 'script', 'div'])
+
+
+
+auth_query_parameters = {
+    "response_type": "code",
+    "redirect_uri": REDIRECT_URI,
+    "scope": SCOPE,
+    # "state": STATE,
+    # "show_dialog": SHOW_DIALOG_str,
+    "client_id": CLIENT_ID
+}
+
+
 
 
 class PlaylistNameForm(Form):
@@ -74,19 +101,50 @@ def index():
 
 @application.route("/login")
 def login():
-    sp_oauth = get_oauth()
-    return redirect(sp_oauth.get_authorize_url())
+    # Auth Step 1: Authorization
+    url_args = "&".join(["{}={}".format(key,urllib.parse.quote(val)) for key,val in auth_query_parameters.items()])
+    auth_url = "{}/?{}".format(SPOTIFY_AUTH_URL, url_args)
+    return redirect(auth_url)
+
 
 
 @application.route("/playlists")
 def playlist_selection():
-    """Render playlists as buttons to choose from."""
-    # This is the route which the Spotify OAuth redirects to.
-    # We finish getting an access token here.
-    if request.args.get("code"):
-        get_spotify(request.args["code"])
+    # Auth Step 4: Requests refresh and access tokens
+    auth_token = request.args['code']
+    code_payload = {
+        "grant_type": "authorization_code",
+        "code": str(auth_token),
+        "redirect_uri": REDIRECT_URI,
+        "client_id" : CLIENT_ID,
+        "client_secret" : CLIENT_SECRET
+    }
+    headers = {}
+    post_request = requests.post(SPOTIFY_TOKEN_URL, data=code_payload, headers=headers)
 
-    playlists = get_user_playlists()
+    # Auth Step 5: Tokens are Returned to Application
+    response_data = json.loads(post_request.text)
+    access_token = response_data["access_token"]
+    refresh_token = response_data["refresh_token"]
+    token_type = response_data["token_type"]
+    expires_in = response_data["expires_in"]
+
+    # Auth Step 6: Use the access token to access Spotify API
+    authorization_header = {"Authorization":"Bearer {}".format(access_token)}
+
+    # Get profile data
+    user_profile_api_endpoint = "{}/me".format(SPOTIFY_API_URL)
+    profile_response = requests.get(user_profile_api_endpoint, headers=authorization_header)
+    profile_data = json.loads(profile_response.text)
+
+    # Get user playlist data
+    playlist_api_endpoint = "{}/playlists".format(profile_data["href"])
+    playlists_response = requests.get(playlist_api_endpoint, headers=authorization_header)
+    playlist_data = json.loads(playlists_response.text)
+
+    playlists = [{"id": playlist["id"], "name": playlist["name"],
+                       "images": playlist["images"]} for playlist in playlist_data['items']]
+
     session["playlist_names"] = [playlist["name"] for playlist in playlists]
     return render_template("playlists.html", playlists=playlists)
 
@@ -138,23 +196,6 @@ def view_playlist(playlist_id):
         script=shuffle.script, div=shuffle.div)
 
 
-def get_oauth():
-    """Return a Spotipy Oauth2 object."""
-    return spotipy.oauth2.SpotifyOAuth(
-        os.environ.get("ClientID"),
-        os.environ.get("ClientSecret"),
-        REDIRECT_URI, scope=SCOPE,
-        cache_path=".tokens")
-
-
-def get_spotify(auth_token=None):
-    """Return an authenticated Spotify object."""
-    oauth = get_oauth()
-    token_info = oauth.get_cached_token()
-    if not token_info and auth_token:
-        token_info = oauth.get_access_token(auth_token)
-
-    return spotipy.Spotify(token_info["access_token"])
 
 
 def get_tracks_for_add(tracks):
