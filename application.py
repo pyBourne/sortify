@@ -33,6 +33,7 @@ from shuffler import Shuffler
 application = Flask(__name__)
 bootstrap = Bootstrap(application)
 load_dotenv(find_dotenv())
+application.secret_key = os.environ.get("SecretKey")
 
 # Flask Parameters
 CLIENT_SIDE_URL = os.environ.get('base_url')
