@@ -153,6 +153,7 @@ def get_spotify(auth_token=None):
     token_info = oauth.get_cached_token()
     if not token_info and auth_token:
         token_info = oauth.get_access_token(auth_token)
+
     return spotipy.Spotify(token_info["access_token"])
 
 
@@ -230,4 +231,4 @@ def get_playlist_id_by_name(name):
 if __name__ == "__main__":
     load_dotenv(find_dotenv())
     application.secret_key = os.environ.get("SecretKey")
-    application.run(debug=bool(os.environ.get("debug")), port=PORT)
+    application.run(debug=bool(os.environ.get("debug")), port=int(PORT))
