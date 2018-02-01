@@ -36,8 +36,16 @@ load_dotenv(find_dotenv())
 
 # Flask Parameters
 CLIENT_SIDE_URL = os.environ.get('base_url')
-PORT = int(os.environ.get('base_port'))
-REDIRECT_URI = "{}:{}/playlists".format(CLIENT_SIDE_URL, PORT)
+
+
+
+PORT = os.environ.get('base_port')
+if PORT is None:
+    REDIRECT_URI = "{}/playlists".format(CLIENT_SIDE_URL)
+else:
+    REDIRECT_URI = "{}:{}/playlists".format(CLIENT_SIDE_URL, PORT)
+
+
 SCOPE = ("playlist-modify-public playlist-modify-private "
          "playlist-read-collaborative playlist-read-private")
 
