@@ -103,7 +103,7 @@ def login():
 @application.route("/playlists")
 def playlist_selection():
 
-    if session['spotify_token'] is None:
+    if session.get('spotify_token') is None:
         # Auth Step 4: Requests refresh and access tokens
         auth_token = request.args['code']
         code_payload = {
