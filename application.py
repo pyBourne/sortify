@@ -15,12 +15,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import os
-import requests
-import urllib.parse
 import json
+import os
+import urllib.parse
 from collections import namedtuple
+from itertools import zip_longest
 
+import requests
 from dotenv import load_dotenv, find_dotenv
 from flask import (Flask, request, redirect, render_template, url_for,
                    session, flash)
@@ -30,7 +31,6 @@ from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired, NoneOf
 
 from shuffler import Shuffler
-from itertools import zip_longest
 
 application = Flask(__name__)
 bootstrap = Bootstrap(application)

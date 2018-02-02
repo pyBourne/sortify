@@ -16,20 +16,16 @@
 
 
 import math
-import requests
-import json
-
+from itertools import zip_longest
 from typing import List, Dict
 
 import numpy as np
 import pandas as pd
 import sklearn.manifold as mani
-
 from bokeh.embed import components
 from bokeh.models import HoverTool, BoxZoomTool, ZoomInTool, ZoomOutTool, ResetTool
 from bokeh.plotting import figure, ColumnDataSource
 from ortools.constraint_solver import pywrapcp
-from itertools import zip_longest
 
 
 class Shuffler(object):
