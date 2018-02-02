@@ -16,28 +16,32 @@
 
 
 import math
+import requests
+import json
+
 from typing import List, Dict
 
 import numpy as np
 import pandas as pd
 import sklearn.manifold as mani
-import spotipy
+
 from bokeh.embed import components
 from bokeh.models import HoverTool, BoxZoomTool, ZoomInTool, ZoomOutTool, ResetTool
 from bokeh.plotting import figure, ColumnDataSource
 from ortools.constraint_solver import pywrapcp
+from itertools import zip_longest
 
 
 class Shuffler(object):
     _tracks = []
-    _spotify = None
+    _features = None
     _df = None
     _sort = None
     _locations = None
 
-    def __init__(self, tracks: List[tuple], spotify: spotipy):
+    def __init__(self, tracks: List[tuple], features):
         self._tracks = tracks
-        self._spotify = spotify
+        self._features = features
 
     def _build_frame(self) -> pd.DataFrame:
         """
@@ -45,12 +49,7 @@ class Shuffler(object):
         :return: a pandas dataframe
         """
 
-        # extract the track ids
-        ids = [x[1] for x in self._tracks]
-
-        # use spotipy to make the api calls and then take the dictionary and make it into pandas
-        features = self._spotify.audio_features(ids)
-        self._df = pd.DataFrame.from_dict(features)
+        self._df = pd.DataFrame.from_dict(self._features)
         self._df.set_index('id')
 
         return self._df
@@ -90,12 +89,12 @@ class Shuffler(object):
         """
         if self._sort is None:
             self._sort = []
-            #get the locations
+            # get the locations
             locations = self.decompose()
             tsp_size = len(locations)
             num_routes = 1  # The number of routes, which is 1 in the TSP.
             # Nodes are indexed from 0 to tsp_size - 1. The depot is the starting node of the route.
-            depot = 0 #TODO should we be able to start at any point
+            depot = 0  # TODO should we be able to start at any point
             # Create routing model.
             if tsp_size > 0:
                 routing = pywrapcp.RoutingModel(tsp_size, num_routes, depot)
@@ -126,7 +125,7 @@ class Shuffler(object):
 
         return self._sort
 
-    def get_charts(self) -> Dict[str,figure]:
+    def get_charts(self) -> Dict[str, figure]:
         if self._sort is None:
             self.get_sort()
 
@@ -161,9 +160,11 @@ class Shuffler(object):
         ])
 
         # the unsorted figure
-        p_orig = figure(plot_width=400, plot_height=400, tools=[hover, BoxZoomTool(), ZoomInTool(), ZoomOutTool(), ResetTool()])
+        p_orig = figure(plot_width=400, plot_height=400,
+                        tools=[hover, BoxZoomTool(), ZoomInTool(), ZoomOutTool(), ResetTool()])
         # the sorted figure
-        p_sort = figure(plot_width=400, plot_height=400, tools=[hover, BoxZoomTool(), ZoomInTool(), ZoomOutTool(), ResetTool()])
+        p_sort = figure(plot_width=400, plot_height=400,
+                        tools=[hover, BoxZoomTool(), ZoomInTool(), ZoomOutTool(), ResetTool()])
 
         # add the circles
         p_orig.circle('x', 'y', size=5, color="navy", alpha=0.5, source=old_source)
@@ -216,3 +217,10 @@ class CreateDistanceCallback(object):
 
     def Distance(self, from_node, to_node):
         return int(self.matrix[from_node][to_node])
+
+
+def grouper(iterable, n, fillvalue=None):
+    "Collect data into fixed-length chunks or blocks"
+    # grouper('ABCDEFG', 3, 'x') --> ABC DEF Gxx"
+    args = [iter(iterable)] * n
+    return zip_longest(*args, fillvalue=fillvalue)
