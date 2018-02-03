@@ -13,7 +13,7 @@ Jinja2==2.10
 MarkupSafe==1.0
 numpy==1.14.0
 oauth2==1.9.0.post1
-ortools==6.6.4656
+ortools
 pandas==0.22.0
 protobuf==3.5.1
 python-dateutil==2.6.1

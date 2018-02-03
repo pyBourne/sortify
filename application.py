@@ -133,6 +133,7 @@ def playlist_selection():
     user_profile_api_endpoint = "{}/me".format(SPOTIFY_API_URL)
     profile_response = requests.get(user_profile_api_endpoint, headers=authorization_header)
     profile_data = json.loads(profile_response.text)
+    print(profile_data)
     session['user_id'] = profile_data['id']
 
     # Get user plafrom flask_oauth import OAuthylist data
