@@ -91,6 +91,10 @@ class PlaylistNameForm(Form):
 def index():
     return render_template('landing.html')
 
+@application.route("/about")
+def about():
+    return render_template('about.html')
+
 
 @application.route("/login")
 def login():
