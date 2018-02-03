@@ -132,6 +132,10 @@ def playlist_selection():
     # Get profile data
     user_profile_api_endpoint = "{}/me".format(SPOTIFY_API_URL)
     profile_response = requests.get(user_profile_api_endpoint, headers=authorization_header)
+    if profile_response.status_code == 401:
+        session.pop('spotify_token')
+        return redirect('playlists')
+
     profile_data = json.loads(profile_response.text)
     print(profile_data)
     session['user_id'] = profile_data['id']
