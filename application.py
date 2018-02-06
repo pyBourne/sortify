@@ -22,9 +22,9 @@ from collections import namedtuple
 from itertools import zip_longest
 
 import requests
-from dotenv import load_dotenv, find_dotenv
-from flask import (Flask, request, redirect, render_template, url_for,
-                   session, flash)
+from dotenv import find_dotenv, load_dotenv
+from flask import (Flask, flash, redirect, render_template, request, session,
+                   url_for)
 from flask_bootstrap import Bootstrap
 from flask_wtf import Form
 from wtforms import StringField, SubmitField
@@ -61,7 +61,8 @@ SCOPE = ("playlist-modify-public playlist-modify-private "
          "playlist-read-collaborative playlist-read-private")
 
 Results = namedtuple('Results', ['sort', 'script', 'div'])
-SpotifyToken = namedtuple('SpotifyToken', ['access_token', 'refresh_token', 'token_type', 'expires_in'])
+SpotifyToken = namedtuple(
+    'SpotifyToken', ['access_token', 'refresh_token', 'token_type', 'expires_in'])
 
 auth_query_parameters = {
     "response_type": "code",
@@ -91,6 +92,7 @@ class PlaylistNameForm(Form):
 def index():
     return render_template('landing.html')
 
+
 @application.route("/about")
 def about():
     return render_template('about.html')
@@ -99,7 +101,8 @@ def about():
 @application.route("/login")
 def login():
     # Auth Step 1: Authorization
-    url_args = "&".join(["{}={}".format(key, urllib.parse.quote(val)) for key, val in auth_query_parameters.items()])
+    url_args = "&".join(["{}={}".format(key, urllib.parse.quote(val))
+                         for key, val in auth_query_parameters.items()])
     auth_url = "{}/?{}".format(SPOTIFY_AUTH_URL, url_args)
     return redirect(auth_url)
 
@@ -118,7 +121,8 @@ def playlist_selection():
             "client_secret": CLIENT_SECRET
         }
         headers = {}
-        post_request = requests.post(SPOTIFY_TOKEN_URL, data=code_payload, headers=headers)
+        post_request = requests.post(
+            SPOTIFY_TOKEN_URL, data=code_payload, headers=headers)
 
         # Auth Step 5: Tokens are Returned to Application
         response_data = json.loads(post_request.text)
@@ -131,11 +135,13 @@ def playlist_selection():
 
     spotify_token = session['spotify_token']
     # Auth Step 6: Use the access token to access Spotify API
-    authorization_header = {"Authorization": "Bearer {}".format(spotify_token['access_token'])}
+    authorization_header = {"Authorization": "Bearer {}".format(
+        spotify_token['access_token'])}
 
     # Get profile data
     user_profile_api_endpoint = "{}/me".format(SPOTIFY_API_URL)
-    profile_response = requests.get(user_profile_api_endpoint, headers=authorization_header)
+    profile_response = requests.get(
+        user_profile_api_endpoint, headers=authorization_header)
     if profile_response.status_code == 401:
         session.pop('spotify_token')
         return redirect('playlists')
@@ -145,7 +151,8 @@ def playlist_selection():
 
     # Get user plafrom flask_oauth import OAuthylist data
     playlist_api_endpoint = "{}/playlists".format(profile_data["href"])
-    playlists_response = requests.get(playlist_api_endpoint, headers=authorization_header)
+    playlists_response = requests.get(
+        playlist_api_endpoint, headers=authorization_header)
     playlist_data = json.loads(playlists_response.text)
 
     playlists = [{"id": playlist["id"], "name": playlist["name"],
@@ -161,12 +168,16 @@ def view_playlist(playlist_id):
     form = PlaylistNameForm(session["playlist_names"])
 
     spotify_token = session['spotify_token']
-    authorization_header = {"Authorization": "Bearer {}".format(spotify_token['access_token'])}
-    playlist_api_endpoint = "{}/users/{}/playlists/{}".format(SPOTIFY_API_URL, session['user_id'], playlist_id)
+    authorization_header = {"Authorization": "Bearer {}".format(
+        spotify_token['access_token'])}
+    playlist_api_endpoint = "{}/users/{}/playlists/{}".format(
+        SPOTIFY_API_URL, session['user_id'], playlist_id)
     tracks_api_endpoint = "{}/tracks".format(playlist_api_endpoint)
 
-    playlist_response = requests.get(playlist_api_endpoint, headers=authorization_header)
-    tracks_reponse = requests.get(tracks_api_endpoint, headers=authorization_header)
+    playlist_response = requests.get(
+        playlist_api_endpoint, headers=authorization_header)
+    tracks_reponse = requests.get(
+        tracks_api_endpoint, headers=authorization_header)
 
     playlist_data = json.loads(playlist_response.text)
     results = json.loads(tracks_reponse.text)
@@ -234,7 +245,8 @@ def create_playlist(playlist_name):
     # Auth Step 6: Use the access token to access Spotify API
     authorization_header = {"Authorization": "Bearer {}".format(spotify_token['access_token']),
                             'Content-Type': 'application/json'}
-    create_api_endpoint = '{}/users/{}/playlists'.format(SPOTIFY_API_URL, session['user_id'])
+    create_api_endpoint = '{}/users/{}/playlists'.format(
+        SPOTIFY_API_URL, session['user_id'])
 
     code_payload = {
         "description": "Shuffled Playlist",
@@ -242,7 +254,8 @@ def create_playlist(playlist_name):
         "name": playlist_name
     }
 
-    response = requests.post(create_api_endpoint, json=code_payload, headers=authorization_header)
+    response = requests.post(
+        create_api_endpoint, json=code_payload, headers=authorization_header)
     response_data = json.loads(response.text)
     return response_data['id']
 
@@ -250,11 +263,14 @@ def create_playlist(playlist_name):
 def add_tracks(playlist_id, tracks):
     spotify_token = session['spotify_token']
     user_id = session['user_id']
-    authorization_header = {"Authorization": "Bearer {}".format(spotify_token['access_token'])}
+    authorization_header = {"Authorization": "Bearer {}".format(
+        spotify_token['access_token'])}
 
-    add_api_endpoint = '{}/users/{}/playlists/{}/tracks'.format(SPOTIFY_API_URL, user_id, playlist_id)
+    add_api_endpoint = '{}/users/{}/playlists/{}/tracks'.format(
+        SPOTIFY_API_URL, user_id, playlist_id)
     uris = ['spotify:track:{}'.format(x) for x in tracks]
-    response = requests.post(add_api_endpoint, json={'uris': uris}, headers=authorization_header)
+    response = requests.post(add_api_endpoint, json={
+                             'uris': uris}, headers=authorization_header)
     print(response.text)
 
 
@@ -274,13 +290,16 @@ def smart_shuffle(tracks):
 
     ids = [x[1] for x in tracks]
     spotify_token = session['spotify_token']
-    authorization_header = {"Authorization": "Bearer {}".format(spotify_token['access_token'])}
+    authorization_header = {"Authorization": "Bearer {}".format(
+        spotify_token['access_token'])}
 
     features = []
 
     for id in ids:
-        features_api_endpoint = '{}/audio-features/{}'.format(SPOTIFY_API_URL, id)
-        features_response = requests.get(features_api_endpoint, headers=authorization_header)
+        features_api_endpoint = '{}/audio-features/{}'.format(
+            SPOTIFY_API_URL, id)
+        features_response = requests.get(
+            features_api_endpoint, headers=authorization_header)
         features_data = json.loads(features_response.text)
         features.append(features_data)
 
@@ -295,12 +314,6 @@ def smart_shuffle(tracks):
 def get_names(tracks):
     """Return just the name component of a list of name/id tuples."""
     return [track[0] for track in tracks]
-
-
-def get_playlist_id_by_name(name):
-    """Return the id for a playlist with name: 'name'."""
-    return [playlist["id"] for playlist in get_user_playlists() if
-            playlist["name"] == name][0]
 
 
 def grouper(iterable, n, fillvalue=None):
