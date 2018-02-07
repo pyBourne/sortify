@@ -11,6 +11,7 @@ import attr
 
 from collections import namedtuple
 from dateutil.relativedelta import relativedelta
+from typing import List
 
 # Flask Parameters
 CLIENT_SIDE_URL = os.environ.get('base_url')
@@ -26,6 +27,7 @@ SPOTIFY_API_BASE_URL = "https://api.spotify.com"
 API_VERSION = "v1"
 SPOTIFY_API_URL = "{}/{}".format(SPOTIFY_API_BASE_URL, API_VERSION)
 USER_PROFILE_ENDPOINT = "{}/me".format(SPOTIFY_API_URL)
+AUDIO_FEATURES_ENDPOINT = "{}/audio-features".format(SPOTIFY_API_URL)
 
 PORT = os.environ.get('base_port')
 if PORT is None:
@@ -115,6 +117,7 @@ class Spotify(object):
         return self._user
 
     def get_playlists(self):
+        self.isLive()
         if self._user is None:
             # this really shouldnt happen
             self.get_user()
@@ -130,14 +133,101 @@ class Spotify(object):
             playlists.extend([self._create_playlist(x) for x in playlist_data['items']])
         return playlists
 
+    def get_playlist(self, playlist_url: str):
+        self.isLive()
+        playlist_response = requests.get(playlist_url, headers=self.get_authorization_header())
+        playlist_data = json.loads(playlist_response.text)
+        playlist = self._create_playlist(playlist_data)
+        return playlist
+
+    def get_playlist_tracks(self, playlist_url: str):
+        self.isLive()
+        tracks_url = '{}/tracks'.format(playlist_url)
+        tracks_response = requests.get(tracks_url, headers=self.get_authorization_header())
+        tracks_data = json.loads(tracks_response.text)
+
+        track_info = tracks_data["items"]
+        while tracks_data['next']:
+            tracks_response = requests.get(tracks_data['next'], headers=self.get_authorization_header())
+            tracks_data = json.loads(tracks_response.text)
+            track_info = dict(track_info, **tracks_data)
+
+        tracks = [self._create_track(x['track']) for x in track_info]
+        return tracks
+
+    def create_playlist(self, playlist_name):
+        self.isLive()
+        if self._user is None:
+            # this really shouldnt happen
+            self.get_user()
+
+        create_api_endpoint = '{}/users/{}/playlists'.format(
+            SPOTIFY_API_URL, self._user.id)
+
+        code_payload = {
+            "description": "Shuffled Playlist",
+            "public": False,
+            "name": playlist_name
+        }
+
+        response = requests.post(
+            create_api_endpoint, json=code_payload, headers=self.get_authorization_header())
+        response_data = json.loads(response.text)
+        return response_data['id']
+
+    def add_tracks_to_playlist(self, playlist_id: str, tracks):
+        self.isLive()
+        if self._user is None:
+            # this really shouldnt happen
+            self.get_user()
+
+        add_api_endpoint = '{}/users/{}/playlists/{}/tracks'.format(
+            SPOTIFY_API_URL, self._user.id, playlist_id)
+
+        # can only add in groups of 100
+        track_groups = [tracks[i:i + 100] for i in range(0, len(tracks), 100)]
+
+        for track_group in track_groups:
+            uris = [x.uri for x in track_group]
+            response = requests.post(add_api_endpoint, json={'uris': uris},
+                                     headers=self.get_authorization_header())
+
+    def get_audio_features(self, tracks):
+        self.isLive()
+
+        if not isinstance(tracks, list):
+            tracks = [tracks]
+
+        # can get up to 100 at a time
+        track_groups = [tracks[i:i + 100] for i in range(0, len(tracks), 100)]
+
+        track_data = []
+        for track_group in track_groups:
+            payload = {'ids': ','.join([x.id for x in track_group])}
+            response = requests.get(AUDIO_FEATURES_ENDPOINT, params=payload, headers=self.get_authorization_header())
+            response_data = json.loads(response.text)
+            track_data.extend(response_data['audio_features'])
+
+        return track_data
+
     @staticmethod
     def _create_playlist(playlist_data):
         playlist = Playlist(href=playlist_data['href'],
                             id=playlist_data['id'],
                             name=playlist_data['name'],
+                            uri=playlist_data['uri'],
                             images=playlist_data['images'],
                             tracks=playlist_data['tracks'])
         return playlist
+
+    @staticmethod
+    def _create_track(track_data):
+        track = Track(href=track_data['href'],
+                      id=track_data['id'],
+                      name=track_data['name'],
+                      uri=track_data['uri'],
+                      popularity=track_data['popularity'])
+        return track
 
     @staticmethod
     def get_auth_url():
@@ -166,5 +256,15 @@ class Playlist(object):
     href = attr.ib(validator=attr.validators.instance_of(str), type=str)
     id = attr.ib(validator=attr.validators.instance_of(str), type=str)
     name = attr.ib(validator=attr.validators.instance_of(str), type=str)
+    uri = attr.ib(validator=attr.validators.instance_of(str), type=str)
     images = attr.ib(validator=attr.validators.instance_of(list))
     tracks = attr.ib(validator=attr.validators.instance_of(dict))
+
+
+@attr.s(frozen=True)
+class Track(object):
+    href = attr.ib(validator=attr.validators.instance_of(str), type=str)
+    id = attr.ib(validator=attr.validators.instance_of(str), type=str)
+    name = attr.ib(validator=attr.validators.instance_of(str), type=str)
+    uri = attr.ib(validator=attr.validators.instance_of(str), type=str)
+    popularity = attr.ib(converter=int, validator=attr.validators.instance_of(int), type=int)

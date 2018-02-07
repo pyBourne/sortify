@@ -25,9 +25,18 @@ from flask_kvsession import KVSessionExtension
 from simplekv.memory.redisstore import RedisStore
 from simplekv.decorator import PrefixDecorator
 from spotify import Spotify, SpotifyToken, User
+from collections import namedtuple
+
+# just an easy holder
+Results = namedtuple('Results', ['sort', 'script', 'div'])
+
+# load the .env file for local dev
+load_dotenv(find_dotenv())
 
 # set up a redis session cache
-store = RedisStore(redis.StrictRedis())
+redis_host = os.environ.get('redis_host')
+redis_port = int(os.environ.get('redis_port'))
+store = RedisStore(redis.StrictRedis(host=redis_host, port=redis_port))
 prefixed_store = PrefixDecorator('sessions_', store)
 # start the app
 application = Flask(__name__)
@@ -35,11 +44,9 @@ application = Flask(__name__)
 bootstrap = Bootstrap(application)
 # create the serverside redis session
 KVSessionExtension(store, application)
-
 application.permanent_session_lifetime = datetime.timedelta(seconds=3600)
 
-# load the .env file for local dev
-load_dotenv(find_dotenv())
+# set the secret key
 application.secret_key = os.environ.get("SecretKey")
 
 
@@ -97,9 +104,53 @@ def playlist_selection():
     user = spotify.get_user()
     playlists = spotify.get_playlists()
     session["playlist_names"] = [playlist.name for playlist in playlists]
+    session["playlist_url"] = {x.id: x.href for x in playlists}
     session['user'] = user
     return render_template("playlists.html", playlists=playlists)
 
+
+@application.route("/playlist/<playlist_id>", methods=["GET", "POST"])
+def view_playlist(playlist_id):
+    """Shuffle a playlist and allow user to save to a new playlist."""
+    form = PlaylistNameForm(session["playlist_names"])
+    spotify = session['spotify']
+    playlist_urls = session['playlist_url']
+    playlist_url = playlist_urls[playlist_id]
+
+    playlist = spotify.get_playlist(playlist_url)
+    tracks = spotify.get_playlist_tracks(playlist_url)
+
+    if "Shuffle" in request.form:
+        return redirect(url_for("view_playlistsplaylist", playlist_id=playlist_id))
+    elif form.validate_on_submit():
+        new_playlist_name = form.name.data
+        new_playlist_id = spotify.create_playlist(new_playlist_name)
+        # You can add up to 100 tracks per request.
+        spotify.add_tracks_to_playlist(new_playlist_id, session['shuffled'])
+        flash("Playlist '{}' saved.".format(new_playlist_name))
+        return redirect(url_for("playlist_selection"))
+
+    name = session["name"] = playlist.name
+    images = playlist.images
+    shuffle = smart_shuffle(tracks)
+    session["shuffled"] = [tracks[x] for x in shuffle.sort]
+    track_names = [x.name for x in tracks]
+    shuffled_names = [x.name for x in session["shuffled"]]
+
+    return render_template(
+        "playlist.html", name=name, track_names=track_names,
+        shuffled_names=shuffled_names, images=images, form=form,
+        script=shuffle.script, div=shuffle.div)
+
+
+def smart_shuffle(tracks):
+    spotify = session['spotify']
+    features = spotify.get_audio_features(tracks)
+    shuffler = Shuffler(tracks, features)
+    sort = shuffler.get_sort()
+    script, div = shuffler.get_charts()
+    results = Results(sort=tuple(sort), script=script, div=div)
+    return results
 
 
 if __name__ == "__main__":

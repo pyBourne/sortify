@@ -126,7 +126,7 @@ class Shuffler(object):
             self.get_sort()
 
         # the song names original
-        old_names = [x[0] for x in self._tracks]
+        old_names = [x.name for x in self._tracks]
         # the song names sorted
         sorted_names = [old_names[i] for i in self._sort]
 
