@@ -131,7 +131,7 @@ def view_playlist(playlist_id):
         return redirect(url_for("playlist_selection"))
 
     name = session["name"] = playlist.name
-    images = playlist.images
+    images = playlist.images[1] if len(playlist.images) > 1 else playlist.images[-1]
     shuffle = smart_shuffle(tracks)
     session["shuffled"] = [tracks[x] for x in shuffle.sort]
     track_names = [x.name for x in tracks]
