@@ -26,6 +26,7 @@ from simplekv.memory.redisstore import RedisStore
 from simplekv.decorator import PrefixDecorator
 from spotify import Spotify, SpotifyToken, User
 from collections import namedtuple
+from logging.config import dictConfig
 
 # just an easy holder
 Results = namedtuple('Results', ['sort', 'script', 'div'])
@@ -78,9 +79,11 @@ def about():
 def login():
     session.permanent = True
     if session.get('spotify_token') is None:
+        application.logger.debug('No spotify token in session, resigning in')
         auth_url = Spotify.get_auth_url()
         return redirect(auth_url)
     else:
+        application.logger.debug('Reloading spotify token from session')
         spotify = Spotify(token=session['spotify_token'])
         session['spotify'] = spotify
         return redirect('playlists')
@@ -88,6 +91,7 @@ def login():
 
 @application.route("/callback")
 def callback():
+    application.logger.debug('Returning from callback')
     auth_token = request.args['code']
     spotify = Spotify(auth_code=auth_token)
     session['spotify'] = spotify
@@ -102,6 +106,7 @@ def playlist_selection():
 
     spotify = session['spotify']
     user = spotify.get_user()
+    application.logger.info('User {} logged in, name={}'.format(user.id, user.display_name))
     playlists = spotify.get_playlists()
     session["playlist_names"] = [playlist.name for playlist in playlists]
     session["playlist_url"] = {x.id: x.href for x in playlists}
@@ -119,6 +124,7 @@ def view_playlist(playlist_id):
 
     playlist = spotify.get_playlist(playlist_url)
     tracks = spotify.get_playlist_tracks(playlist_url)
+    application.logger.info('Sorting playlist {} at {}'.format(playlist.name, playlist.uri))
 
     if "Shuffle" in request.form:
         return redirect(url_for("view_playlistsplaylist", playlist_id=playlist_id))
@@ -127,6 +133,7 @@ def view_playlist(playlist_id):
         new_playlist_id = spotify.create_playlist(new_playlist_name)
         # You can add up to 100 tracks per request.
         spotify.add_tracks_to_playlist(new_playlist_id, session['shuffled'])
+        application.logger.info('Saving playlist {}'.format(new_playlist_name))
         flash("Playlist '{}' saved.".format(new_playlist_name))
         return redirect(url_for("playlist_selection"))
 
