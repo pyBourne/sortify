@@ -15,6 +15,7 @@ from dotenv import find_dotenv, load_dotenv
 from flask import (Flask, flash, redirect, render_template, request, session,
                    url_for)
 from flask_bootstrap import Bootstrap
+from flask_mobility import Mobility
 from flask_wtf import Form
 from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired, NoneOf
@@ -43,6 +44,8 @@ prefixed_store = PrefixDecorator('sessions_', store)
 application = Flask(__name__)
 # add the bootstrap
 bootstrap = Bootstrap(application)
+#add mobility
+Mobility(application)
 # create the serverside redis session
 KVSessionExtension(store, application)
 application.permanent_session_lifetime = datetime.timedelta(seconds=3600)
@@ -155,7 +158,7 @@ def smart_shuffle(tracks):
     features = spotify.get_audio_features(tracks)
     shuffler = Shuffler(tracks, features)
     sort = shuffler.get_sort()
-    script, div = shuffler.get_charts()
+    script, div = shuffler.get_charts(request.MOBILE)
     results = Results(sort=tuple(sort), script=script, div=div)
     return results
 

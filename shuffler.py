@@ -22,11 +22,14 @@ from typing import List, Dict
 import numpy as np
 import pandas as pd
 import sklearn.manifold as mani
+import logging
 from bokeh.embed import components
 from bokeh.models import HoverTool, BoxZoomTool, ZoomInTool, ZoomOutTool, ResetTool
 from bokeh.plotting import figure, ColumnDataSource
 from ortools.constraint_solver import pywrapcp
 
+
+logger = logging.getLogger(__name__)
 
 class Shuffler(object):
     _tracks = []
@@ -71,6 +74,7 @@ class Shuffler(object):
         [songs,2]
         :return: ndarray
         """
+        logger.debug('Decomposing features into 2d matrix')
         if self._locations is None:
             manifold = mani.MDS(n_components=2)
             self._locations = manifold.fit_transform(self.get_features())
@@ -84,6 +88,7 @@ class Shuffler(object):
         :return: list of integers representing the index in sort order
         """
         if self._sort is None:
+            logger.debug('Starting sort')
             self._sort = []
             # get the locations
             locations = self.decompose()
@@ -106,7 +111,7 @@ class Shuffler(object):
                 if assignment:
 
                     # Solution cost.
-                    print("Total distance: {}".format(assignment.ObjectiveValue()))
+                    logger.info("Total distance: {}".format(assignment.ObjectiveValue()))
 
                     # Inspect solution.
                     # Only one route here; otherwise iterate from 0 to routing.vehicles() - 1.
@@ -121,7 +126,7 @@ class Shuffler(object):
 
         return self._sort
 
-    def get_charts(self) -> Dict[str, figure]:
+    def get_charts(self, mobile=False) -> Dict[str, figure]:
         if self._sort is None:
             self.get_sort()
 
@@ -156,11 +161,16 @@ class Shuffler(object):
         ])
 
         # the unsorted figure
+        if mobile:
+            logger.debug('Mobile browser detected')
+            toolset = [hover]
+        else:
+            toolset = [hover, BoxZoomTool(), ZoomInTool(), ZoomOutTool(), ResetTool()]
         p_orig = figure(plot_width=400, plot_height=400,
-                        tools=[hover, BoxZoomTool(), ZoomInTool(), ZoomOutTool(), ResetTool()])
+                        tools=toolset)
         # the sorted figure
         p_sort = figure(plot_width=400, plot_height=400,
-                        tools=[hover, BoxZoomTool(), ZoomInTool(), ZoomOutTool(), ResetTool()])
+                        tools=toolset)
 
         # add the circles
         p_orig.circle('x', 'y', size=5, color="navy", alpha=0.5, source=old_source)

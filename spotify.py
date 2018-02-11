@@ -2,16 +2,16 @@
 # Copyright (C) 2018 Jacob Bourne
 
 
+import datetime
 import json
+import logging
 import os
 import urllib.parse
-import requests
-import datetime
-import attr
-
 from collections import namedtuple
+
+import attr
+import requests
 from dateutil.relativedelta import relativedelta
-from typing import List
 
 # Flask Parameters
 CLIENT_SIDE_URL = os.environ.get('base_url')
@@ -42,6 +42,8 @@ SpotifyToken = namedtuple(
     'SpotifyToken', ['access_token', 'refresh_token', 'token_type', 'expires_on'])
 
 
+logger = logging.getLogger(__name__)
+
 class Spotify(object):
     _access_token = None
     _refresh_token = None
@@ -59,6 +61,7 @@ class Spotify(object):
             self._logon(auth_code)
 
     def _logon(self, auth_code):
+        logger.debug('Logging in with auth code')
         code_payload = {
             "grant_type": "authorization_code",
             "code": str(auth_code),
@@ -69,6 +72,7 @@ class Spotify(object):
         self._logon_or_refresh(code_payload)
 
     def _refresh(self):
+        logger.debug('Refreshing tokens')
         code_payload = {
             "grant_type": "authorization_code",
             "code": str(self._refresh_token),
@@ -79,6 +83,7 @@ class Spotify(object):
         self._logon_or_refresh(code_payload)
 
     def _logon_or_refresh(self, payload):
+        logger.debug('Getting Spotify Tokens')
         headers = {}
         post_request = requests.post(
             SPOTIFY_TOKEN_URL, data=payload, headers=headers)
@@ -98,6 +103,7 @@ class Spotify(object):
 
     def isLive(self):
         if self._expires_on < datetime.datetime.now():
+            self._logger.debug('Token expired, refreshing')
             self._refresh()
         return True
 
@@ -114,6 +120,7 @@ class Spotify(object):
                           href=profile_data['href'],
                           uri=profile_data['uri'],
                           id=profile_data['id'])
+        logger.debug('Retrieved user {}'.format(profile_data['id']))
         return self._user
 
     def get_playlists(self):
@@ -173,6 +180,7 @@ class Spotify(object):
         response = requests.post(
             create_api_endpoint, json=code_payload, headers=self.get_authorization_header())
         response_data = json.loads(response.text)
+        logger.debug('Created playlist {}'.format(playlist_name))
         return response_data['id']
 
     def add_tracks_to_playlist(self, playlist_id: str, tracks):
