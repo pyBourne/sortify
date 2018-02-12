@@ -2,7 +2,7 @@
 {% block pagename %}
 {% endblock %}
 {% block data %}
-    <h1>Choose a playlist to randomize</h1>
+    <h1>Choose a playlist to sort</h1>
 	<div class="row">
 	{% for item in playlists %}
 		<div class="col-sm-6 col-md-4">
@@ -12,7 +12,7 @@
 				{% endif %}
 				<div class="caption">
 					<h4>{{ item.name }}</h4>
-					<p><a href="../playlist/{{ item.id }}" class="btn btn-primary" role="button">Shuffle!</a></p>
+					<p><a href="../playlist/{{ item.id }}" class="btn btn-primary" role="button">Sort!</a></p>
 				</div>
 			</div>
 		</div>
