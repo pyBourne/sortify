@@ -2,6 +2,12 @@
 {% block title %}
     Sortify
 {% endblock %}
+{% import "bootstrap/google.html" as google %}
+
+{% block scripts %}
+  {{super()}}
+  {{google.uanalytics('UA-113803389-1')}}
+{% endblock %}
 {% block navbar %}
     <nav class="navbar navbar-inverse navbar-fixed-top">
       <div class="container">
