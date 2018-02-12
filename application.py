@@ -19,6 +19,7 @@ from simplekv.decorator import PrefixDecorator
 from simplekv.memory.redisstore import RedisStore
 from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired, NoneOf
+from logging.handlers import RotatingFileHandler, SysLogHandler
 
 from shuffler import Shuffler
 from spotify import Spotify
@@ -47,10 +48,24 @@ application.permanent_session_lifetime = datetime.timedelta(seconds=3600)
 # set the secret key
 application.secret_key = os.environ.get("SecretKey")
 
-# set up logging
-if os.environ.get('debug') != 'True':
-    application.logger.basicConfig(filename='/opt/python/log/spotify.log', level=logging.INFO)
-    logging.basicConfig(filename='/opt/python/log/spotify.log', level=logging.INFO)
+#set up logging
+logger = logging.getLogger(__name__)
+formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+llevel = logging.INFO
+
+if os.environ.get('debug') == 'True':
+    logger.setLevel(logging.DEBUG)
+    handler = SysLogHandler()
+    handler.setFormatter(formatter)
+else:
+    logger.setLevel(logging.INFO)
+    handler = RotatingFileHandler('/opt/python/log/sortify.log', maxBytes=1024, backupCount=5)
+    handler.setFormatter(formatter)
+
+application.logger.addHandler(handler)
+
+
+
 
 
 class PlaylistNameForm(Form):
