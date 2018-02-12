@@ -157,7 +157,7 @@ class Spotify(object):
         while tracks_data['next']:
             tracks_response = requests.get(tracks_data['next'], headers=self.get_authorization_header())
             tracks_data = json.loads(tracks_response.text)
-            track_info = dict(track_info, **tracks_data)
+            track_info.extend(tracks_data["items"])
 
         tracks = [self._create_track(x['track']) for x in track_info]
         return tracks
