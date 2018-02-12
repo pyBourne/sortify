@@ -2,32 +2,26 @@
 # Copyright (C) 2018 Jacob Bourne
 
 
-import json
-import os
-import urllib.parse
-import redis
 import datetime
+import logging
+import os
 from collections import namedtuple
-from itertools import zip_longest
 
-import requests
+import redis
 from dotenv import find_dotenv, load_dotenv
 from flask import (Flask, flash, redirect, render_template, request, session,
                    url_for)
 from flask_bootstrap import Bootstrap
+from flask_kvsession import KVSessionExtension
 from flask_mobility import Mobility
 from flask_wtf import Form
+from simplekv.decorator import PrefixDecorator
+from simplekv.memory.redisstore import RedisStore
 from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired, NoneOf
 
 from shuffler import Shuffler
-
-from flask_kvsession import KVSessionExtension
-from simplekv.memory.redisstore import RedisStore
-from simplekv.decorator import PrefixDecorator
-from spotify import Spotify, SpotifyToken, User
-from collections import namedtuple
-from logging.config import dictConfig
+from spotify import Spotify
 
 # just an easy holder
 Results = namedtuple('Results', ['sort', 'script', 'div'])
@@ -44,7 +38,7 @@ prefixed_store = PrefixDecorator('sessions_', store)
 application = Flask(__name__)
 # add the bootstrap
 bootstrap = Bootstrap(application)
-#add mobility
+# add mobility
 Mobility(application)
 # create the serverside redis session
 KVSessionExtension(store, application)
@@ -52,6 +46,10 @@ application.permanent_session_lifetime = datetime.timedelta(seconds=3600)
 
 # set the secret key
 application.secret_key = os.environ.get("SecretKey")
+
+# set up logging
+if os.environ.get('debug') != 'True':
+    logging.basicConfig(filename='/opt/python/log/spotify.log', level=logging.INFO)
 
 
 class PlaylistNameForm(Form):
