@@ -49,6 +49,7 @@ application.secret_key = os.environ.get("SecretKey")
 
 # set up logging
 if os.environ.get('debug') != 'True':
+    application.logger.basicConfig(filename='/opt/python/log/spotify.log', level=logging.INFO)
     logging.basicConfig(filename='/opt/python/log/spotify.log', level=logging.INFO)
 
 
