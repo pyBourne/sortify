@@ -253,7 +253,7 @@ class Spotify(object):
 
 @attr.s(frozen=True)
 class User(object):
-    display_name = attr.ib(validator=attr.validators.instance_of(str), type=str)
+    display_name = attr.ib()
     href = attr.ib(validator=attr.validators.instance_of(str), type=str)
     uri = attr.ib(validator=attr.validators.instance_of(str), type=str)
     id = attr.ib(validator=attr.validators.instance_of(str), type=str)
