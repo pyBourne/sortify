@@ -153,7 +153,7 @@ def view_playlist(playlist_id):
     application.logger.info('Sorting playlist {} at {}'.format(playlist.name, playlist.uri))
 
     if "Shuffle" in request.form:
-        return redirect(url_for("view_playlistsplaylist", playlist_id=playlist_id))
+        return redirect(url_for("view_playlist", playlist_id=playlist_id))
     elif form.validate_on_submit():
         new_playlist_name = form.name.data
         new_playlist_id = spotify.create_playlist(new_playlist_name)
