@@ -19,7 +19,7 @@ from simplekv.decorator import PrefixDecorator
 from simplekv.memory.redisstore import RedisStore
 from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired, NoneOf
-from logging.handlers import RotatingFileHandler, SysLogHandler
+from logging.handlers import TimedRotatingFileHandler, SysLogHandler
 from werkzeug.exceptions import default_exceptions
 
 from shuffler import Shuffler
@@ -60,7 +60,7 @@ if os.environ.get('debug') == 'True':
     handler.setFormatter(formatter)
 else:
     logger.setLevel(logging.INFO)
-    handler = RotatingFileHandler('/opt/python/log/sortify.log', maxBytes=1024, backupCount=5)
+    handler = TimedRotatingFileHandler('/opt/python/log/sortify.log', when='d', interval=1, backupCount=7)
     handler.setFormatter(formatter)
 
 application.logger.addHandler(handler)
