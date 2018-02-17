@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block pagename %}
+{% endblock %}
+{% block data %}
+    <div class="container">
+        <div class="jumbotron">
+            <h1>Sorry</h1>
+            <img class="img-responsive" src="{{url_for('static', filename='doh.jpg')}}" alt="D'OH">
+            <p>Something went wrong, rest assured our highly trained staff of unpaid interns is looking into it.</p>
+            <a href="{{ url_for('index') }}" class="btn btn-lg btn-default">Go Home</a>
+        </div>
+    </div>
+{% endblock %}

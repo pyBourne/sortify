@@ -20,6 +20,7 @@ from simplekv.memory.redisstore import RedisStore
 from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired, NoneOf
 from logging.handlers import RotatingFileHandler, SysLogHandler
+from werkzeug.exceptions import default_exceptions
 
 from shuffler import Shuffler
 from spotify import Spotify
@@ -63,9 +64,6 @@ else:
     handler.setFormatter(formatter)
 
 application.logger.addHandler(handler)
-
-
-
 
 
 class PlaylistNameForm(Form):
@@ -142,6 +140,12 @@ def view_playlist(playlist_id):
     form = PlaylistNameForm(session["playlist_names"])
     spotify = session['spotify']
     playlist_urls = session['playlist_url']
+
+    if playlist_id not in playlist_urls:
+        # attempting to get a playlist not in the users playlists
+        application.logger.debug('Playlist {} not found in user playlist list'.format(playlist_id))
+        return redirect('login')
+
     playlist_url = playlist_urls[playlist_id]
 
     playlist = spotify.get_playlist(playlist_url)
@@ -181,6 +185,13 @@ def smart_shuffle(tracks):
     results = Results(sort=tuple(sort), script=script, div=div)
     return results
 
+def _handle_http_exception(e):
+    logger.exception(e.description)
+    return render_template("error.html", error=e)
+
+# add error handling
+for code in default_exceptions:
+    application.errorhandler(code)(_handle_http_exception)
 
 if __name__ == "__main__":
     load_dotenv(find_dotenv())
