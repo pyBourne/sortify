@@ -119,7 +119,8 @@ def callback():
 @application.route("/playlists")
 def playlist_selection():
     if session.get('spotify') is None:
-        return redirect('playlists')
+        application.logger.debug('No spotify in session, reloging in')
+        return redirect('login')
 
     spotify = session['spotify']
     user = spotify.get_user()
@@ -133,6 +134,10 @@ def playlist_selection():
 
 @application.route("/playlist/<playlist_id>", methods=["GET", "POST"])
 def view_playlist(playlist_id):
+    if session.get('playlist_names') is None:
+        application.logger.debug('No playlist name in session, reloging in')
+        return redirect('login')
+
     """Shuffle a playlist and allow user to save to a new playlist."""
     form = PlaylistNameForm(session["playlist_names"])
     spotify = session['spotify']
