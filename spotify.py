@@ -41,10 +41,13 @@ SCOPE = ("playlist-modify-public playlist-modify-private "
 SpotifyToken = namedtuple(
     'SpotifyToken', ['access_token', 'refresh_token', 'token_type', 'expires_on'])
 
-
 logger = logging.getLogger(__name__)
 
+
 class Spotify(object):
+    """
+    Class for handling interactions with spotify
+    """
     _access_token = None
     _refresh_token = None
     _token_type = None
@@ -53,6 +56,11 @@ class Spotify(object):
     _user = None
 
     def __init__(self, auth_code=None, token=None):
+        """
+        Create the object, must pass in one of auth_code or a spotify token
+        :param auth_code: the auth code from Spotify.com
+        :param token: token data, usually from the session
+        """
 
         if all(v is None for v in {auth_code, token}):
             raise ValueError('Expected either auth_code or token args')
@@ -61,6 +69,7 @@ class Spotify(object):
             self._logon(auth_code)
 
     def _logon(self, auth_code):
+        """Using the auth code to get all the tokens"""
         logger.debug('Logging in with auth code')
         code_payload = {
             "grant_type": "authorization_code",
@@ -72,6 +81,7 @@ class Spotify(object):
         self._logon_or_refresh(code_payload)
 
     def _refresh(self):
+        """Refresh tokens if they expired"""
         logger.debug('Refreshing tokens')
         code_payload = {
             "grant_type": "authorization_code",
@@ -83,6 +93,10 @@ class Spotify(object):
         self._logon_or_refresh(code_payload)
 
     def _logon_or_refresh(self, payload):
+        """
+        Get the spotify tokens, either new ones or refreshed ones
+        :param payload: the payload json to send to spotify
+        """
         logger.debug('Getting Spotify Tokens')
         headers = {}
         post_request = requests.post(
@@ -93,29 +107,43 @@ class Spotify(object):
         self._refresh_token = response_data['refresh_token']
         self._token_type = response_data['token_type']
         seconds = int(response_data['expires_in'])
+        # what time these tokens expire
         self._expires_on = datetime.datetime.now() + relativedelta(seconds=seconds)
 
     def get_spotify_token(self):
+        """
+        Get the spotify tokens
+        :return: Spotify Tokens
+        """
         token = SpotifyToken(self._access_token,
                              self._refresh_token,
                              self._token_type,
                              self._expires_on)
 
     def isLive(self):
+        """Check to see if the access tokens have expired
+            always returns true, since if they have expired this method
+            refreshed the tokens
+        """
         if self._expires_on < datetime.datetime.now():
             self._logger.debug('Token expired, refreshing')
             self._refresh()
         return True
 
     def get_authorization_header(self):
+        """utility method to just create the request header with the right
+        token information
+        """
         authorization_header = {"Authorization": "Bearer {}".format(self._access_token)}
         return authorization_header
 
     def get_user(self):
+        """Get the Spotify user"""
         self.isLive()
         profile_response = requests.get(
             USER_PROFILE_ENDPOINT, headers=self.get_authorization_header())
         profile_data = json.loads(profile_response.text)
+        # create our user object
         self._user = User(display_name=profile_data['display_name'],
                           href=profile_data['href'],
                           uri=profile_data['uri'],
