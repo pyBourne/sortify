@@ -217,7 +217,8 @@ def smart_shuffle(tracks):
 
 def _handle_http_exception(e):
     """Simple error handler"""
-    logger.exception(e.description)
+    if e.code != 404 or application.logger.isEnabledFor(logging.DEBUG):
+        application.logger.exception(e.description)
     return render_template("error.html", error=e)
 
 
