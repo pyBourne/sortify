@@ -10,7 +10,7 @@ from collections import namedtuple
 import redis
 from dotenv import find_dotenv, load_dotenv
 from flask import (Flask, flash, redirect, render_template, request, session,
-                   url_for)
+                   url_for, send_from_directory)
 from flask_bootstrap import Bootstrap
 from flask_kvsession import KVSessionExtension
 from flask_mobility import Mobility
@@ -83,6 +83,11 @@ class PlaylistNameForm(Form):
 @application.route("/")
 def index():
     return render_template('landing.html')
+
+@application.route('/favicon.ico')
+def favicon():
+    return send_from_directory(os.path.join(application.root_path, 'static'),
+                          'favicon.ico',mimetype='image/vnd.microsoft.icon')
 
 
 @application.route("/about")
